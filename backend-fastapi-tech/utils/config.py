@@ -1,15 +1,37 @@
+import json
 from functools import lru_cache
 
-from pydantic_settings import BaseSettings
-from pydantic import field_validator
+from pydantic import Field, field_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+def _safe_json_loads(value: str):
+    """Return JSON-decoded value or the raw string if decoding fails.
+
+    Pydantic will try to JSON-decode complex types (like list[str]) from the
+    environment. Allow comma-separated strings such as
+    "http://localhost:5173,http://localhost:4173" by falling back to the raw
+    value when the env var is not valid JSON.
+    """
+
+    try:
+        return json.loads(value)
+    except (TypeError, json.JSONDecodeError):
+        return value
 
 
 class Settings(BaseSettings):
-    database_url: str
-    secret_key: str
-    algorithm: str
-    access_token_expire_minutes: int
-    cors_origins: list[str]
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        case_sensitive=False,
+        json_loads=_safe_json_loads,
+    )
+
+    database_url: str = Field(default="postgresql+asyncpg://postgres:postgres@localhost:5432/online_store")
+    secret_key: str = Field(default="change-me")
+    algorithm: str = Field(default="HS256")
+    access_token_expire_minutes: int = Field(default=60)
+    cors_origins: list[str] = Field(default_factory=lambda: ["http://localhost:5173", "http://localhost:4173"])
 
     @field_validator("cors_origins", mode="before")
     @classmethod
@@ -17,10 +39,6 @@ class Settings(BaseSettings):
         if isinstance(value, str):
             return [origin.strip() for origin in value.split(",") if origin.strip()]
         return value
-
-    class Config:
-        env_file = ".env"
-        case_sensitive = False
 
 
 @lru_cache
