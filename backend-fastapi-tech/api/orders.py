@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends
 
-from backend.api.dependencies import UOWDep, get_current_user
-from backend.schemas.orders import OrderCreate, OrderRead
-from backend.schemas.users import UserRead
-from backend.services.orders import OrdersService
+from api.dependencies import UOWDep, get_current_user
+from schemas.orders import OrderCreate, OrderRead
+from schemas.users import UserRead
+from services.orders import OrdersService
 
 router = APIRouter(prefix="/orders", tags=["Orders"])
 

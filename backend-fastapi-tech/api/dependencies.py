@@ -4,9 +4,9 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 
-from backend.schemas.users import UserRead
-from backend.utils.config import get_settings
-from backend.utils.unitofwork import IUnitOfWork, UnitOfWork
+from schemas.users import UserRead
+from utils.config import get_settings
+from utils.unitofwork import IUnitOfWork, UnitOfWork
 
 UOWDep = Annotated[IUnitOfWork, Depends(UnitOfWork)]
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/users/login")

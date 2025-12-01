@@ -1,5 +1,5 @@
-from backend.models.orders import OrderItem
-from backend.utils.repository import SQLAlchemyRepository
+from models.orders import OrderItem
+from utils.repository import SQLAlchemyRepository
 
 
 class OrderItemsRepository(SQLAlchemyRepository):

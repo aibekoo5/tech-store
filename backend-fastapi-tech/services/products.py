@@ -1,7 +1,7 @@
 from fastapi import HTTPException
 
-from backend.schemas.products import ProductCreate, ProductRead, ProductUpdate
-from backend.utils.unitofwork import IUnitOfWork
+from schemas.products import ProductCreate, ProductRead, ProductUpdate
+from utils.unitofwork import IUnitOfWork
 
 
 class ProductsService:

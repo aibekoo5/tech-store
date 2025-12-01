@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends
 
-from backend.api.dependencies import UOWDep, get_current_user
-from backend.schemas.users import TokenResponse, UserCreate, UserLogin, UserRead
-from backend.services.users import UsersService
+from api.dependencies import UOWDep, get_current_user
+from schemas.users import TokenResponse, UserCreate, UserLogin, UserRead
+from services.users import UsersService
 
 router = APIRouter(prefix="/users", tags=["Users"])
 

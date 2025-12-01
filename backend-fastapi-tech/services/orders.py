@@ -1,7 +1,7 @@
 from fastapi import HTTPException
 
-from backend.schemas.orders import OrderCreate, OrderRead
-from backend.utils.unitofwork import IUnitOfWork
+from schemas.orders import OrderCreate, OrderRead
+from utils.unitofwork import IUnitOfWork
 
 
 class OrdersService:

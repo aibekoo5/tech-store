@@ -3,8 +3,8 @@ from datetime import datetime
 from sqlalchemy import DateTime, String
 from sqlalchemy.orm import Mapped, mapped_column
 
-from backend.db.db import Base
-from backend.schemas.users import UserRead
+from db.db import Base
+from schemas.users import UserRead
 
 
 class User(Base):

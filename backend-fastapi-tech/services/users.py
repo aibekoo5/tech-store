@@ -2,10 +2,10 @@ from datetime import timedelta
 
 from fastapi import HTTPException, status
 
-from backend.schemas.users import TokenResponse, UserCreate, UserLogin, UserRead
-from backend.utils.config import get_settings
-from backend.utils.security import create_access_token, hash_password, verify_password
-from backend.utils.unitofwork import IUnitOfWork
+from schemas.users import TokenResponse, UserCreate, UserLogin, UserRead
+from utils.config import get_settings
+from utils.security import create_access_token, hash_password, verify_password
+from utils.unitofwork import IUnitOfWork
 
 
 class UsersService:

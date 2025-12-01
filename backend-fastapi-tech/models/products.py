@@ -3,8 +3,8 @@ from datetime import datetime
 from sqlalchemy import DateTime, Float, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from backend.db.db import Base
-from backend.schemas.products import ProductRead
+from db.db import Base
+from schemas.products import ProductRead
 
 
 class Product(Base):

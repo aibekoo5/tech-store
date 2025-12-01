@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends
 
-from backend.api.dependencies import UOWDep, get_current_user
-from backend.schemas.products import ProductCreate, ProductRead, ProductUpdate
-from backend.schemas.users import UserRead
-from backend.services.products import ProductsService
+from api.dependencies import UOWDep, get_current_user
+from schemas.products import ProductCreate, ProductRead, ProductUpdate
+from schemas.users import UserRead
+from services.products import ProductsService
 
 router = APIRouter(prefix="/products", tags=["Products"])
 

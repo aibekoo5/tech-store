@@ -3,8 +3,8 @@ from datetime import datetime
 from sqlalchemy import DateTime, Float, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from backend.db.db import Base
-from backend.schemas.orders import OrderItemRead, OrderRead
+from db.db import Base
+from schemas.orders import OrderItemRead, OrderRead
 
 
 class Order(Base):

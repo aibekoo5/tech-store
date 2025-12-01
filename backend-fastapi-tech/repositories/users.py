@@ -1,7 +1,7 @@
 from sqlalchemy import select
 
-from backend.models.users import User
-from backend.utils.repository import SQLAlchemyRepository
+from models.users import User
+from utils.repository import SQLAlchemyRepository
 
 
 class UsersRepository(SQLAlchemyRepository):

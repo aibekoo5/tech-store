@@ -1,7 +1,7 @@
 from sqlalchemy import select
 
-from backend.models.products import Product
-from backend.utils.repository import SQLAlchemyRepository
+from models.products import Product
+from utils.repository import SQLAlchemyRepository
 
 
 class ProductsRepository(SQLAlchemyRepository):

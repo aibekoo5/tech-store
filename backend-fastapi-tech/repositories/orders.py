@@ -1,7 +1,7 @@
 from sqlalchemy import insert, select
 
-from backend.models.orders import Order, OrderItem
-from backend.utils.repository import SQLAlchemyRepository
+from models.orders import Order, OrderItem
+from utils.repository import SQLAlchemyRepository
 
 
 class OrdersRepository(SQLAlchemyRepository):

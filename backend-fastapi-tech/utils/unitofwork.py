@@ -1,11 +1,11 @@
 from abc import ABC, abstractmethod
 from typing import Type
 
-from backend.db.db import async_session_maker
-from backend.repositories.order_items import OrderItemsRepository
-from backend.repositories.orders import OrdersRepository
-from backend.repositories.products import ProductsRepository
-from backend.repositories.users import UsersRepository
+from db.db import async_session_maker
+from repositories.order_items import OrderItemsRepository
+from repositories.orders import OrdersRepository
+from repositories.products import ProductsRepository
+from repositories.users import UsersRepository
 
 
 class IUnitOfWork(ABC):

@@ -2,9 +2,9 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from backend.api.routers import all_routers
-from backend.db.db import Base, engine
-from backend.utils.config import get_settings
+from api.routers import all_routers
+from db.db import Base, engine
+from utils.config import get_settings
 
 # Import models so metadata is populated
 from backend.models import orders, products, users  # noqa: F401
