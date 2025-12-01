@@ -62,13 +62,13 @@ This project is built with:
 
 ## Backend API
 
-The repository includes a FastAPI backend under `backend/` built with an onion architecture (routers, services, repositories, unit of work). PostgreSQL is accessed via async SQLAlchemy.
+The repository includes a FastAPI backend under `backend-fastapi-tech/` built with an onion architecture (routers, services, repositories, unit of work). PostgreSQL is accessed via async SQLAlchemy.
 
 Run it locally:
 
-1. Copy `backend/.env.example` to `backend/.env` and update credentials/secrets.
-2. Install Python dependencies: `pip install -r backend/requirements.txt`
-3. Start the server: `uvicorn backend.main:app --reload --env-file backend/.env --app-dir backend`
+1. Copy `backend-fastapi-tech/.env.example` to `backend-fastapi-tech/.env` and update credentials/secrets.
+2. Install Python dependencies: `pip install -r backend-fastapi-tech/requirements.txt`
+3. Start the server: `uvicorn main:app --reload --env-file backend-fastapi-tech/.env --app-dir backend-fastapi-tech`
 
 The API is available at `http://localhost:8000` with interactive docs at `/docs`.
 
