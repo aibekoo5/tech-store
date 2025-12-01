@@ -1,4 +1,4 @@
-from fastapi import HTTPException
+from fastapi import HTTPException, status
 
 from schemas.products import ProductCreate, ProductRead, ProductUpdate
 from utils.unitofwork import IUnitOfWork
