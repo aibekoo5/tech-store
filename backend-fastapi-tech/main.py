@@ -7,7 +7,7 @@ from db.db import Base, engine
 from utils.config import get_settings
 
 # Import models so metadata is populated
-from backend.models import orders, products, users  # noqa: F401
+from models import orders, products, users  # noqa: F401
 
 settings = get_settings()
 
@@ -33,4 +33,4 @@ for router in all_routers:
 
 
 if __name__ == "__main__":
-    uvicorn.run(app="backend.main:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run(app="main:app", host="0.0.0.0", port=8000, reload=True)
