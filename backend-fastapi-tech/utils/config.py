@@ -27,7 +27,7 @@ class Settings(BaseSettings):
         json_loads=_safe_json_loads,
     )
 
-    database_url: str = Field(default="postgresql+asyncpg://postgres:postgres@localhost:5432/tech")
+    database_url: str = Field(default="postgresql+asyncpg://postgres:654321@localhost:5432/tech")
     secret_key: str = Field(default="5f113ece64482703baf05b8f805be00399d21fe58507e7330eb9415785dc8d36")
     algorithm: str = Field(default="HS256")
     access_token_expire_minutes: int = Field(default=60)
