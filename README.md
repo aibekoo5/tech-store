@@ -1,85 +1,68 @@
-# Welcome to your Lovable project
+# ArzanAll — интернет-магазин электроники
 
-## Project info
+Полноценный магазин: каталог, корзина, избранное, оформление заказов, авторизация по JWT.
+Интерфейс на трёх языках: русский, қазақша, English.
 
-**URL**: https://lovable.dev/projects/04826d72-31bd-4fee-acac-8e3ee8aded5e
+| Часть | Папка | Стек |
+|---|---|---|
+| Frontend | `frontend-react-tech/` | React 18, TypeScript, Vite, Tailwind CSS, shadcn/ui, TanStack Query |
+| Backend | `backend-fastapi-tech/` | FastAPI, async SQLAlchemy 2, PostgreSQL (asyncpg), JWT, Stripe |
 
-## How can I edit this code?
+## Запуск локально
 
-There are several ways of editing your application.
+Нужны: Python 3.11, Node.js 18+, PostgreSQL 16.
 
-**Use Lovable**
+### 1. База данных
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/04826d72-31bd-4fee-acac-8e3ee8aded5e) and start prompting.
+Создайте базу `tech` в PostgreSQL. Таблицы создаются и каталог заполняется
+(`seed_products.json`) автоматически при первом запуске бэкенда.
 
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
+### 2. Backend — http://localhost:8000 (документация: `/docs`)
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+cd backend-fastapi-tech
+python -m venv .venv
+.venv\Scripts\activate          # Windows  (Linux/macOS: source .venv/bin/activate)
+pip install -r requirements.txt
+copy .env.example .env          # укажите пароль PostgreSQL и SECRET_KEY
+uvicorn main:app --reload --port 8000
+```
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+### 3. Frontend — http://localhost:8080
 
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+```sh
+cd frontend-react-tech
+npm install
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+Vite проксирует запросы `/api/*` на `http://localhost:8000`
+(другой адрес бэкенда: переменная `VITE_BACKEND_URL`).
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## API
 
-**Use GitHub Codespaces**
+| Метод | Путь | Описание |
+|---|---|---|
+| POST | `/users/register`, `/users/login` | регистрация, вход (JWT) |
+| GET | `/users/me` | текущий пользователь |
+| GET | `/products/`, `/products/{id}` | каталог |
+| GET/POST | `/cart/`, `/cart/add`, `/cart/update`, `/cart/remove`, `/cart/clear` | корзина |
+| GET/POST/DELETE | `/favorites/`, `/favorites/{product_id}` | избранное |
+| GET/POST | `/orders/`, `/orders/checkout` | заказы (сумма считается на сервере) |
+| POST | `/payments/create-intent`, `/payments/webhook` | Stripe |
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+Эндпоинты корзины, избранного, заказов и платежей требуют заголовок `Authorization: Bearer <token>`.
 
-## What technologies are used for this project?
+## Структура бэкенда
 
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## Backend API
-
-The repository includes a FastAPI backend under `backend-fastapi-tech/` built with an onion architecture (routers, services, repositories, unit of work). PostgreSQL is accessed via async SQLAlchemy.
-
-Run it locally:
-
-1. Copy `backend-fastapi-tech/.env.example` to `backend-fastapi-tech/.env` and update credentials/secrets.
-2. Install Python dependencies: `pip install -r backend-fastapi-tech/requirements.txt`
-3. Start the server: `uvicorn main:app --reload --env-file backend-fastapi-tech/.env --app-dir backend-fastapi-tech`
-
-The API is available at `http://localhost:8000` with interactive docs at `/docs`.
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/04826d72-31bd-4fee-acac-8e3ee8aded5e) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+```
+backend-fastapi-tech/
+├── main.py              # приложение, CORS, создание таблиц, сид каталога
+├── db.py                # подключение к БД, загрузка .env
+├── api/                 # роутеры (users, products, cart, favorites, orders, payments)
+├── models/              # модели SQLAlchemy
+├── schemas/             # схемы Pydantic
+├── repositories/        # доступ к данным
+├── services/            # бизнес-логика
+└── seed_products.json   # стартовый каталог
+```

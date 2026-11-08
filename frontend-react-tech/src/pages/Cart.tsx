@@ -1,78 +1,61 @@
-import { useState } from "react";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { products } from "@/data/products";
+import { useStore } from "@/context/StoreContext";
+import { cartTotals } from "@/lib/api";
+import { useI18n } from "@/i18n/I18nContext";
 import { Trash2, Plus, Minus, ShoppingBag } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useNavigate } from "react-router-dom";
 
-interface CartItem {
-  product: typeof products[0];
-  quantity: number;
-}
-
 const Cart = () => {
   const navigate = useNavigate();
-  const [cartItems, setCartItems] = useState<CartItem[]>([
-    { product: products[0], quantity: 1 },
-    { product: products[4], quantity: 2 },
-    { product: products[1], quantity: 1 },
-  ]);
+  const { user, isAuthLoading, cart: cartItems, isCartLoading, updateQuantity: setQuantity, removeFromCart } = useStore();
 
+  // Errors are reported by the store via toast
   const updateQuantity = (productId: number, delta: number) => {
-    setCartItems((items) =>
-      items
-        .map((item) =>
-          item.product.id === productId
-            ? { ...item, quantity: Math.max(0, item.quantity + delta) }
-            : item
-        )
-        .filter((item) => item.quantity > 0)
-    );
+    const item = cartItems.find((i) => i.product.id === productId);
+    if (item) setQuantity(productId, item.quantity + delta).catch(() => {});
   };
 
   const removeItem = (productId: number) => {
-    setCartItems((items) => items.filter((item) => item.product.id !== productId));
+    removeFromCart(productId).catch(() => {});
   };
 
-  const subtotal = cartItems.reduce(
-    (sum, item) => sum + item.product.price * item.quantity,
-    0
-  );
-  const shipping = subtotal > 50 ? 0 : 9.99;
-  const tax = subtotal * 0.08;
-  const total = subtotal + shipping + tax;
+  const { subtotal, shipping, tax, total } = cartTotals(cartItems);
+  const { t, tv } = useI18n();
 
-  const handleCheckout = () => {
-    navigate("/checkout", {
-      state: {
-        subtotal,
-        shipping,
-        tax,
-        total
-      }
-    });
-  };
+  const handleCheckout = () => navigate("/checkout");
 
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
 
       <div className="container mx-auto px-4 py-8 flex-1">
-        <h1 className="font-heading text-4xl font-bold mb-8">Shopping Cart</h1>
+        <h1 className="font-heading text-4xl font-bold mb-8">{t("cart.title")}</h1>
 
-        {cartItems.length === 0 ? (
+        {!user && !isAuthLoading ? (
           <div className="text-center py-16">
             <ShoppingBag className="h-24 w-24 mx-auto mb-4 text-muted-foreground" />
-            <h2 className="font-heading text-2xl font-semibold mb-2">Your cart is empty</h2>
+            <h2 className="font-heading text-2xl font-semibold mb-2">{t("cart.signInTitle")}</h2>
+            <p className="text-muted-foreground mb-6">{t("cart.signInText")}</p>
+            <Button asChild>
+              <NavLink to="/profile">{t("cart.signIn")}</NavLink>
+            </Button>
+          </div>
+        ) : isAuthLoading || isCartLoading ? (
+          <p className="text-muted-foreground py-16 text-center">{t("cart.loading")}</p>
+        ) : cartItems.length === 0 ? (
+          <div className="text-center py-16">
+            <ShoppingBag className="h-24 w-24 mx-auto mb-4 text-muted-foreground" />
+            <h2 className="font-heading text-2xl font-semibold mb-2">{t("cart.empty")}</h2>
             <p className="text-muted-foreground mb-6">
-              Add some products to get started!
+              {t("cart.emptyText")}
             </p>
             <Button asChild>
-              <NavLink to="/catalog">Continue Shopping</NavLink>
+              <NavLink to="/catalog">{t("cart.continue")}</NavLink>
             </Button>
           </div>
         ) : (
@@ -92,7 +75,7 @@ const Cart = () => {
                   <div className="flex-1">
                     <h3 className="font-semibold mb-1">{item.product.name}</h3>
                     <p className="text-sm text-muted-foreground mb-2">
-                      {item.product.category}
+                      {tv("category", item.product.category)}
                     </p>
                     <p className="text-lg font-bold text-primary">
                       ${item.product.price}
@@ -132,21 +115,21 @@ const Cart = () => {
             {/* Order Summary */}
             <div className="lg:col-span-1">
               <div className="bg-card rounded-lg border border-border p-6 sticky top-20">
-                <h2 className="font-heading text-xl font-bold mb-4">Order Summary</h2>
+                <h2 className="font-heading text-xl font-bold mb-4">{t("cart.summary")}</h2>
 
                 <div className="space-y-3 mb-4">
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Subtotal</span>
+                    <span className="text-muted-foreground">{t("cart.subtotal")}</span>
                     <span className="font-semibold">${subtotal.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Shipping</span>
+                    <span className="text-muted-foreground">{t("cart.shipping")}</span>
                     <span className="font-semibold">
-                      {shipping === 0 ? "FREE" : `$${shipping.toFixed(2)}`}
+                      {shipping === 0 ? t("cart.free") : `$${shipping.toFixed(2)}`}
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Tax</span>
+                    <span className="text-muted-foreground">{t("cart.tax")}</span>
                     <span className="font-semibold">${tax.toFixed(2)}</span>
                   </div>
                 </div>
@@ -154,7 +137,7 @@ const Cart = () => {
                 <Separator className="my-4" />
 
                 <div className="flex justify-between mb-6">
-                  <span className="font-heading font-semibold text-lg">Total</span>
+                  <span className="font-heading font-semibold text-lg">{t("cart.total")}</span>
                   <span className="font-heading font-bold text-2xl text-primary">
                     ${total.toFixed(2)}
                   </span>
@@ -166,29 +149,29 @@ const Cart = () => {
                     size="lg"
                     onClick={handleCheckout}
                   >
-                    Proceed to Checkout
+                    {t("cart.checkout")}
                   </Button>
                   <Button variant="outline" className="w-full" asChild>
-                    <NavLink to="/catalog">Continue Shopping</NavLink>
+                    <NavLink to="/catalog">{t("cart.continue")}</NavLink>
                   </Button>
                 </div>
 
                 <div className="mt-6 p-4 bg-muted rounded-lg">
                   <p className="text-xs text-muted-foreground text-center">
                     {shipping === 0 ? (
-                      "🎉 You qualify for free shipping!"
+                      t("cart.freeShippingOk")
                     ) : (
-                      <>Add ${(50 - subtotal).toFixed(2)} more for free shipping</>
+                      t("cart.freeShippingMore", { amount: `$${(50 - subtotal).toFixed(2)}` })
                     )}
                   </p>
                 </div>
 
                 {/* Promo Code */}
                 <div className="mt-4">
-                  <label className="text-sm font-medium mb-2 block">Promo Code</label>
+                  <label className="text-sm font-medium mb-2 block">{t("cart.promo")}</label>
                   <div className="flex gap-2">
-                    <Input placeholder="Enter code" />
-                    <Button variant="secondary">Apply</Button>
+                    <Input placeholder={t("cart.promoPlaceholder")} />
+                    <Button variant="secondary">{t("cart.apply")}</Button>
                   </div>
                 </div>
               </div>

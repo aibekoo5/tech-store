@@ -4,6 +4,8 @@ import { Heart, ShoppingCart, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { useStore } from "@/context/StoreContext";
+import { useI18n } from "@/i18n/I18nContext";
 
 interface ProductCardProps {
   id: number;
@@ -28,18 +30,31 @@ export const ProductCard = ({
   badge,
   className,
 }: ProductCardProps) => {
-  const [isFavorite, setIsFavorite] = useState(false);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
+  const [isPending, setIsPending] = useState(false);
+  const { addToCart, isFavorite: checkFavorite, toggleFavorite } = useStore();
+  const { t, tv } = useI18n();
+  const isFavorite = checkFavorite(id);
 
-  const handleAddToCart = (e: React.MouseEvent) => {
+  const handleAddToCart = async (e: React.MouseEvent) => {
     e.preventDefault();
-    setIsAddingToCart(true);
-    setTimeout(() => setIsAddingToCart(false), 1000);
+    if (isPending) return;
+    setIsPending(true);
+    try {
+      if (await addToCart(id)) {
+        setIsAddingToCart(true);
+        setTimeout(() => setIsAddingToCart(false), 1000);
+      }
+    } catch {
+      /* toast already shown */
+    } finally {
+      setIsPending(false);
+    }
   };
 
   const handleToggleFavorite = (e: React.MouseEvent) => {
     e.preventDefault();
-    setIsFavorite(!isFavorite);
+    toggleFavorite(id);
   };
 
   return (
@@ -48,7 +63,7 @@ export const ProductCard = ({
         {/* Badge */}
         {badge && (
           <Badge className="absolute top-3 left-3 z-10 bg-primary text-primary-foreground">
-            {badge}
+            {tv("badge", badge)}
           </Badge>
         )}
 
@@ -61,6 +76,8 @@ export const ProductCard = ({
             isFavorite && "text-red-500"
           )}
           onClick={handleToggleFavorite}
+          aria-label={t("nav.favorites")}
+          aria-pressed={isFavorite}
         >
           <Heart className={cn("h-5 w-5", isFavorite && "fill-current")} />
         </Button>
@@ -116,9 +133,10 @@ export const ProductCard = ({
               isAddingToCart && "bg-green-600 hover:bg-green-600"
             )}
             onClick={handleAddToCart}
+            disabled={isPending}
           >
             <ShoppingCart className="h-4 w-4 mr-2" />
-            {isAddingToCart ? "Added!" : "Add to Cart"}
+            {isAddingToCart ? t("common.added") : t("common.addToCart")}
           </Button>
         </div>
       </div>

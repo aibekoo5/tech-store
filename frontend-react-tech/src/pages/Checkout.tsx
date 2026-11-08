@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useState } from "react";
+import { useNavigate, Navigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -9,52 +10,57 @@ import { Separator } from "@/components/ui/separator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, CheckCircle2, CreditCard, Truck, Lock } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-
-interface CheckoutData {
-  subtotal: number;
-  shipping: number;
-  tax: number;
-  total: number;
-}
+import { api, cartTotals } from "@/lib/api";
+import { useStore } from "@/context/StoreContext";
+import { useI18n } from "@/i18n/I18nContext";
 
 const Checkout = () => {
   const navigate = useNavigate();
-  const location = useLocation();
-  const checkoutData = (location.state as CheckoutData) || {
-    subtotal: 0,
-    shipping: 0,
-    tax: 0,
-    total: 0
-  };
-
+  const queryClient = useQueryClient();
+  const { user, isAuthLoading, cart, isCartLoading, refreshCart } = useStore();
+  const { t, tv } = useI18n();
   const [isProcessing, setIsProcessing] = useState(false);
   const [orderStep, setOrderStep] = useState<"form" | "processing" | "verifying" | "success">("form");
+  const [paidTotal, setPaidTotal] = useState(0);
 
-  const handlePlaceOrder = (e: React.FormEvent) => {
+  const totals = cartTotals(cart);
+  // After a successful order the cart is empty, so the success screen shows the server total
+  const checkoutData = orderStep === "form" ? totals : { ...totals, total: paidTotal };
+
+  const handlePlaceOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsProcessing(true);
     setOrderStep("processing");
-
-    // Simulate payment processing
-    setTimeout(() => {
+    try {
+      // Card details are not sent anywhere: payment is simulated, the order is real
+      const order = await api.checkout();
+      setPaidTotal(order.total);
       setOrderStep("verifying");
-      
+      refreshCart();
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
       setTimeout(() => {
         setOrderStep("success");
-        
-        setTimeout(() => {
-          toast({
-            title: "Order Placed Successfully!",
-            description: `Your order of $${checkoutData.total.toFixed(2)} has been confirmed.`,
-          });
-          
-          setTimeout(() => {
-            navigate("/");
-          }, 2000);
-        }, 2000);
-      }, 1500);
-    }, 2000);
+        toast({
+          title: t("checkout.successTitle"),
+          description: t("checkout.successText", { id: order.id, total: `$${order.total.toFixed(2)}` }),
+        });
+        setTimeout(() => navigate("/profile"), 2500);
+      }, 1000);
+    } catch (err) {
+      setOrderStep("form");
+      setIsProcessing(false);
+      toast({
+        title: t("checkout.failed"),
+        description: err instanceof Error ? tv("err", err.message) : t("store.error"),
+        variant: "destructive",
+      });
+    }
   };
+
+  if (!isAuthLoading && !user) return <Navigate to="/profile" replace />;
+  if (orderStep === "form" && !isCartLoading && !isAuthLoading && cart.length === 0) {
+    return <Navigate to="/cart" replace />;
+  }
 
   if (orderStep !== "form") {
     return (
@@ -66,14 +72,14 @@ const Checkout = () => {
               {orderStep === "processing" && (
                 <>
                   <Loader2 className="h-16 w-16 animate-spin text-primary" />
-                  <p className="text-lg text-muted-foreground">Processing payment...</p>
+                  <p className="text-lg text-muted-foreground">{t("checkout.processingPayment")}</p>
                 </>
               )}
               
               {orderStep === "verifying" && (
                 <>
                   <Loader2 className="h-16 w-16 animate-spin text-primary" />
-                  <p className="text-lg text-muted-foreground">Verifying transaction...</p>
+                  <p className="text-lg text-muted-foreground">{t("checkout.verifying")}</p>
                 </>
               )}
               
@@ -81,15 +87,15 @@ const Checkout = () => {
                 <>
                   <CheckCircle2 className="h-20 w-20 text-green-500 animate-scale-in" />
                   <div className="text-center space-y-2">
-                    <h2 className="text-2xl font-bold">Order Confirmed!</h2>
+                    <h2 className="text-2xl font-bold">{t("checkout.confirmed")}</h2>
                     <p className="text-lg font-semibold text-primary">
                       ${checkoutData.total.toFixed(2)}
                     </p>
                     <p className="text-sm text-muted-foreground">
-                      Thank you for your purchase!
+                      {t("checkout.thanks")}
                     </p>
                     <p className="text-xs text-muted-foreground pt-4">
-                      Redirecting to home page...
+                      {t("checkout.redirect")}
                     </p>
                   </div>
                 </>
@@ -107,7 +113,7 @@ const Checkout = () => {
       <Navbar />
 
       <div className="container mx-auto px-4 py-8 flex-1">
-        <h1 className="font-heading text-4xl font-bold mb-8">Checkout</h1>
+        <h1 className="font-heading text-4xl font-bold mb-8">{t("checkout.title")}</h1>
 
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Checkout Form */}
@@ -118,40 +124,40 @@ const Checkout = () => {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Truck className="h-5 w-5" />
-                    Shipping Information
+                    {t("checkout.shippingInfo")}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="firstName">First Name</Label>
+                      <Label htmlFor="firstName">{t("checkout.firstName")}</Label>
                       <Input id="firstName" required />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="lastName">Last Name</Label>
+                      <Label htmlFor="lastName">{t("checkout.lastName")}</Label>
                       <Input id="lastName" required />
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
+                    <Label htmlFor="email">{t("checkout.email")}</Label>
                     <Input id="email" type="email" required />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="address">Address</Label>
+                    <Label htmlFor="address">{t("checkout.address")}</Label>
                     <Input id="address" required />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="city">City</Label>
+                      <Label htmlFor="city">{t("checkout.city")}</Label>
                       <Input id="city" required />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="zip">ZIP Code</Label>
+                      <Label htmlFor="zip">{t("checkout.zip")}</Label>
                       <Input id="zip" required />
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="phone">Phone Number</Label>
+                    <Label htmlFor="phone">{t("checkout.phone")}</Label>
                     <Input id="phone" type="tel" required />
                   </div>
                 </CardContent>
@@ -162,27 +168,27 @@ const Checkout = () => {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <CreditCard className="h-5 w-5" />
-                    Payment Information
+                    {t("checkout.payment")}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="cardNumber">Card Number</Label>
+                    <Label htmlFor="cardNumber">{t("checkout.cardNumber")}</Label>
                     <Input id="cardNumber" placeholder="1234 5678 9012 3456" required />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="expiry">Expiry Date</Label>
+                      <Label htmlFor="expiry">{t("checkout.expiry")}</Label>
                       <Input id="expiry" placeholder="MM/YY" required />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="cvv">CVV</Label>
+                      <Label htmlFor="cvv">{t("checkout.cvv")}</Label>
                       <Input id="cvv" placeholder="123" required />
                     </div>
                   </div>
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Lock className="h-4 w-4" />
-                    <span>Your payment information is secure and encrypted</span>
+                    <span>{t("checkout.secure")}</span>
                   </div>
                 </CardContent>
               </Card>
@@ -196,10 +202,10 @@ const Checkout = () => {
                 {isProcessing ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                    Processing...
+                    {t("checkout.processing")}
                   </>
                 ) : (
-                  "Place Order"
+                  t("checkout.placeOrder")
                 )}
               </Button>
             </form>
@@ -209,22 +215,22 @@ const Checkout = () => {
           <div className="lg:col-span-1">
             <Card className="sticky top-20">
               <CardHeader>
-                <CardTitle>Order Summary</CardTitle>
+                <CardTitle>{t("cart.summary")}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-3">
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Subtotal</span>
+                    <span className="text-muted-foreground">{t("cart.subtotal")}</span>
                     <span className="font-semibold">${checkoutData.subtotal.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Shipping</span>
+                    <span className="text-muted-foreground">{t("cart.shipping")}</span>
                     <span className="font-semibold">
-                      {checkoutData.shipping === 0 ? "FREE" : `$${checkoutData.shipping.toFixed(2)}`}
+                      {checkoutData.shipping === 0 ? t("cart.free") : `$${checkoutData.shipping.toFixed(2)}`}
                     </span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Tax</span>
+                    <span className="text-muted-foreground">{t("cart.tax")}</span>
                     <span className="font-semibold">${checkoutData.tax.toFixed(2)}</span>
                   </div>
                 </div>
@@ -232,7 +238,7 @@ const Checkout = () => {
                 <Separator />
 
                 <div className="flex justify-between">
-                  <span className="font-heading font-semibold text-lg">Total</span>
+                  <span className="font-heading font-semibold text-lg">{t("cart.total")}</span>
                   <span className="font-heading font-bold text-2xl text-primary">
                     ${checkoutData.total.toFixed(2)}
                   </span>

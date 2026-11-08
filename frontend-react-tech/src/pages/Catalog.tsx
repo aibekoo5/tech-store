@@ -6,10 +6,14 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
-import { products, categories } from "@/data/products";
+import { categories } from "@/data/products";
+import { useProducts } from "@/hooks/use-products";
+import { useI18n } from "@/i18n/I18nContext";
 import { SlidersHorizontal } from "lucide-react";
 
 const Catalog = () => {
+  const { data: products = [], isLoading, isError } = useProducts();
+  const { t, tv } = useI18n();
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [priceRange, setPriceRange] = useState([0, 3000]);
   const [showFilters, setShowFilters] = useState(true);
@@ -27,9 +31,9 @@ const Catalog = () => {
       <div className="container mx-auto px-4 py-8 flex-1">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="font-heading text-4xl font-bold mb-2">Product Catalog</h1>
+          <h1 className="font-heading text-4xl font-bold mb-2">{t("catalog.title")}</h1>
           <p className="text-muted-foreground">
-            Browse our complete collection of {products.length} products
+            {t("catalog.subtitle", { count: products.length })}
           </p>
         </div>
 
@@ -38,7 +42,7 @@ const Catalog = () => {
           <aside className={`${showFilters ? 'block' : 'hidden'} lg:block w-full lg:w-64 flex-shrink-0`}>
             <div className="bg-card rounded-lg border border-border p-6 sticky top-20">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="font-heading font-semibold text-lg">Filters</h2>
+                <h2 className="font-heading font-semibold text-lg">{t("catalog.filters")}</h2>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -47,13 +51,13 @@ const Catalog = () => {
                     setPriceRange([0, 3000]);
                   }}
                 >
-                  Clear All
+                  {t("catalog.clearAll")}
                 </Button>
               </div>
 
               {/* Categories */}
               <div className="mb-6">
-                <h3 className="font-semibold mb-3">Categories</h3>
+                <h3 className="font-semibold mb-3">{t("catalog.categories")}</h3>
                 <div className="space-y-2">
                   {categories.map((category) => (
                     <div key={category} className="flex items-center space-x-2">
@@ -66,7 +70,7 @@ const Catalog = () => {
                         htmlFor={category}
                         className="text-sm font-normal cursor-pointer"
                       >
-                        {category}
+                        {tv("category", category)}
                       </Label>
                     </div>
                   ))}
@@ -75,7 +79,7 @@ const Catalog = () => {
 
               {/* Price Range */}
               <div>
-                <h3 className="font-semibold mb-3">Price Range</h3>
+                <h3 className="font-semibold mb-3">{t("catalog.priceRange")}</h3>
                 <div className="space-y-4">
                   <Slider
                     min={0}
@@ -104,19 +108,23 @@ const Catalog = () => {
                 className="w-full"
               >
                 <SlidersHorizontal className="h-4 w-4 mr-2" />
-                {showFilters ? 'Hide Filters' : 'Show Filters'}
+                {showFilters ? t("catalog.hideFilters") : t("catalog.showFilters")}
               </Button>
             </div>
 
             {/* Results Count */}
             <div className="mb-6 flex items-center justify-between">
               <p className="text-sm text-muted-foreground">
-                Showing {filteredProducts.length} of {products.length} products
+                {t("catalog.showing", { shown: filteredProducts.length, total: products.length })}
               </p>
             </div>
 
             {/* Products */}
-            {filteredProducts.length > 0 ? (
+            {isLoading ? (
+              <p className="text-muted-foreground py-12 text-center">{t("common.loadingProducts")}</p>
+            ) : isError ? (
+              <p className="text-destructive py-12 text-center">{t("common.loadError")}</p>
+            ) : filteredProducts.length > 0 ? (
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredProducts.map((product) => (
                   <ProductCard key={product.id} {...product} />
@@ -124,7 +132,7 @@ const Catalog = () => {
               </div>
             ) : (
               <div className="text-center py-12">
-                <p className="text-muted-foreground">No products found matching your filters.</p>
+                <p className="text-muted-foreground">{t("catalog.noResults")}</p>
                 <Button
                   variant="outline"
                   className="mt-4"
@@ -133,7 +141,7 @@ const Catalog = () => {
                     setPriceRange([0, 3000]);
                   }}
                 >
-                  Clear Filters
+                  {t("catalog.clearFilters")}
                 </Button>
               </div>
             )}
