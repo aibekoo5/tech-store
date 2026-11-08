@@ -69,7 +69,7 @@ const AuthForm = () => {
           className="space-y-4"
         >
           <div className="space-y-2">
-            <Label htmlFor="username">{t("auth.username")}</Label>
+            <Label htmlFor="username">{mode === "login" ? t("auth.login") : t("auth.username")}</Label>
             <Input id="username" value={username} onChange={(e) => setUsername(e.target.value)} required autoComplete="username" />
           </div>
           {mode === "register" && (
@@ -100,6 +100,7 @@ const AuthForm = () => {
                 {t("auth.demo")}
               </Button>
               <p className="text-xs text-center text-muted-foreground">{t("auth.demoHint", DEMO)}</p>
+              <p className="text-xs text-center text-muted-foreground">{t("auth.demoAdminHint")}</p>
             </div>
           )}
           <p className="text-sm text-center text-muted-foreground">
@@ -126,6 +127,8 @@ const getStatusColor = (status: string) => {
       return "bg-blue-100 text-blue-800";
     case "Processing":
       return "bg-yellow-100 text-yellow-800";
+    case "Cancelled":
+      return "bg-gray-200 text-gray-700";
     default:
       return "bg-gray-100 text-gray-800";
   }

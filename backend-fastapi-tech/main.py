@@ -13,9 +13,9 @@ from pathlib import Path
 from sqlalchemy import select, text
 
 from db import async_engine, AsyncSessionLocal
-from models import Base, Product, User
+from models import Base, Product, User, SeededProduct
 from repositories.user import pwd_context
-from api import product_router, user_router, cart_router, payment_router, order_router, favorite_router
+from api import product_router, user_router, cart_router, payment_router, order_router, favorite_router, admin_router
 
 
 SEED_FILE = Path(__file__).parent / "seed_products.json"
@@ -28,38 +28,64 @@ UPGRADE_SQL = [
     "ALTER TABLE products ADD COLUMN IF NOT EXISTS reviews INTEGER DEFAULT 0",
     "ALTER TABLE products ADD COLUMN IF NOT EXISTS specs JSON",
     "ALTER TABLE orders ADD COLUMN IF NOT EXISTS created_at TIMESTAMP NOT NULL DEFAULT now()",
+    "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_admin BOOLEAN NOT NULL DEFAULT false",
+    "ALTER TABLE users ADD COLUMN IF NOT EXISTS created_at TIMESTAMP NOT NULL DEFAULT now()",
 ]
 
 
 async def seed_products():
-    """Sync the catalog with seed_products.json: add every seed product whose name is not in the DB yet.
-    Safe to run on every start; existing products (and edits to them) are left untouched."""
+    """Import products from seed_products.json that were never imported before.
+    Imported names are remembered in `seeded_products`, so products an admin deletes
+    or renames do not come back on the next start. Safe to run on every start."""
     if not SEED_FILE.exists():
         return
     async with AsyncSessionLocal() as session:
-        existing = set((await session.execute(select(Product.name))).scalars().all())
-        new_items = [d for d in json.loads(SEED_FILE.read_text(encoding="utf-8")) if d["name"] not in existing]
-        if new_items:
-            session.add_all(Product(**d) for d in new_items)
-            await session.commit()
-
-
-async def seed_demo_user():
-    """Create a demo account so anyone who clones the project can sign in right away.
-    Controlled by DEMO_USER_ENABLED (default: true). Disable it in production."""
-    if os.environ.get("DEMO_USER_ENABLED", "true").lower() not in ("1", "true", "yes"):
-        return
-    username = os.environ.get("DEMO_USERNAME", "demo")
-    password = os.environ.get("DEMO_PASSWORD", "demo123")
-    email = os.environ.get("DEMO_EMAIL", "demo@arzanall.kz")
-    async with AsyncSessionLocal() as session:
-        exists = (await session.execute(
-            select(User.id).where((User.username == username) | (User.email == email))
-        )).first()
-        if exists:
-            return
-        session.add(User(username=username, email=email, hashed_password=pwd_context.hash(password)))
+        seeded = set((await session.execute(select(SeededProduct.name))).scalars().all())
+        if not seeded:
+            # First run with this logic: products already in the DB count as imported
+            existing = set((await session.execute(select(Product.name))).scalars().all())
+            session.add_all(SeededProduct(name=n) for n in existing)
+            seeded = existing
+        for data in json.loads(SEED_FILE.read_text(encoding="utf-8")):
+            if data["name"] not in seeded:
+                session.add(Product(**data))
+                session.add(SeededProduct(name=data["name"]))
+                seeded.add(data["name"])
         await session.commit()
+
+
+def _enabled(var: str, default: str = "true") -> bool:
+    return os.environ.get(var, default).lower() in ("1", "true", "yes")
+
+
+async def ensure_user(username: str, email: str, password: str, is_admin: bool = False):
+    """Create the account if neither username nor email is taken; promote to admin if requested."""
+    async with AsyncSessionLocal() as session:
+        user = (await session.execute(
+            select(User).where((User.username == username) | (User.email == email))
+        )).scalars().first()
+        if user is None:
+            session.add(User(username=username, email=email,
+                             hashed_password=pwd_context.hash(password), is_admin=is_admin))
+        elif is_admin and not user.is_admin:
+            user.is_admin = True
+        await session.commit()
+
+
+async def seed_accounts():
+    """Demo accounts for local/dev use (DEMO_USER_ENABLED, default true):
+         demo / demo123   - regular customer
+         admin / admin123 - administrator
+       Production administrator: set ADMIN_USERNAME, ADMIN_EMAIL, ADMIN_PASSWORD."""
+    if _enabled("DEMO_USER_ENABLED"):
+        await ensure_user(os.environ.get("DEMO_USERNAME", "demo"),
+                          os.environ.get("DEMO_EMAIL", "demo@arzanall.kz"),
+                          os.environ.get("DEMO_PASSWORD", "demo123"))
+        await ensure_user("admin", "admin@arzanall.kz", "admin123", is_admin=True)
+    admin_name, admin_password = os.environ.get("ADMIN_USERNAME"), os.environ.get("ADMIN_PASSWORD")
+    if admin_name and admin_password:
+        await ensure_user(admin_name, os.environ.get("ADMIN_EMAIL", f"{admin_name}@arzanall.kz"),
+                          admin_password, is_admin=True)
 
 
 @asynccontextmanager
@@ -71,7 +97,7 @@ async def lifespan(app: FastAPI):
         for stmt in UPGRADE_SQL:
             await conn.execute(text(stmt))
     await seed_products()
-    await seed_demo_user()
+    await seed_accounts()
     yield
     await async_engine.dispose()
 
@@ -94,6 +120,7 @@ app.include_router(cart_router)
 app.include_router(payment_router)
 app.include_router(order_router)
 app.include_router(favorite_router)
+app.include_router(admin_router)
 
 
 @app.get("/health")

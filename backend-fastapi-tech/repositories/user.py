@@ -1,4 +1,5 @@
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import func
 from sqlalchemy.future import select
 from models.user import User
 from schemas.user import UserCreate
@@ -31,8 +32,16 @@ class UserRepository:
         await self.db.refresh(user)
         return user
 
+    async def get_by_login(self, login: str) -> Optional[User]:
+        """Find a user by username or email (email is case-insensitive)."""
+        login = login.strip()
+        result = await self.db.execute(
+            select(User).where((User.username == login) | (func.lower(User.email) == login.lower()))
+        )
+        return result.scalars().first()
+
     async def verify_user(self, username: str, password: str) -> Optional[User]:
-        user = await self.get_by_username(username)
+        user = await self.get_by_login(username)
         if user and pwd_context.verify(password, user.hashed_password):
             return user
         return None

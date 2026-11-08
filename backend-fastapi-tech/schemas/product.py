@@ -21,3 +21,18 @@ class ProductRead(ProductBase):
     id: int
 
     model_config = {"from_attributes": True}
+
+
+class ProductUpdate(BaseModel):
+    """Partial update: only the fields that are sent are changed."""
+    name: Optional[str] = None
+    description: Optional[str] = None
+    price: Optional[float] = None
+    original_price: Optional[float] = None
+    image_url: Optional[str] = None
+    stock: Optional[int] = None
+    category: Optional[str] = None
+    badge: Optional[str] = None
+    rating: Optional[float] = None
+    reviews: Optional[int] = None
+    specs: Optional[Dict[str, str]] = None

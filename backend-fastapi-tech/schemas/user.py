@@ -10,6 +10,7 @@ class UserCreate(UserBase):
 
 class UserRead(UserBase):
     id: int
+    is_admin: bool = False
 
     model_config = {"from_attributes": True}
 

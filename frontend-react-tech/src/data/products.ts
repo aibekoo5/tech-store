@@ -13,6 +13,7 @@ export interface Product {
     [key: string]: string;
   };
   inStock: boolean;
+  stock: number;
 }
 
 // Products are loaded from the backend (GET /products), see src/lib/api.ts

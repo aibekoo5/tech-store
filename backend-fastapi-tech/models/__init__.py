@@ -4,3 +4,4 @@ from .product import Product
 from .cart import Cart, CartItem
 from .order import Order, OrderItem
 from .favorite import Favorite
+from .seed import SeededProduct

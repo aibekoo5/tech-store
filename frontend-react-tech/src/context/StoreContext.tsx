@@ -41,7 +41,7 @@ export const StoreProvider = ({ children }: { children: ReactNode }) => {
   const logout = useCallback(() => {
     tokenStorage.clear();
     setToken(null);
-    for (const key of ["me", "cart", "orders", "favorites"]) queryClient.removeQueries({ queryKey: [key] });
+    for (const key of ["me", "cart", "orders", "favorites", "admin"]) queryClient.removeQueries({ queryKey: [key] });
   }, [queryClient]);
 
   const meQuery = useQuery({

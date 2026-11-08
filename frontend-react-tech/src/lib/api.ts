@@ -83,6 +83,7 @@ export interface User {
   id: number;
   username: string;
   email: string;
+  is_admin: boolean;
 }
 
 export interface CartItem {
@@ -111,6 +112,7 @@ const toProduct = (p: ApiProduct): Product => ({
   description: p.description ?? "",
   specs: p.specs ?? {},
   inStock: p.stock > 0,
+  stock: p.stock,
 });
 
 const toCart = (c: { items: ApiCartItem[] }): CartItem[] =>
@@ -170,4 +172,96 @@ export const cartTotals = (items: CartItem[]) => {
   const shipping = subtotal > 50 ? 0 : 9.99;
   const tax = subtotal * 0.08;
   return { subtotal, shipping, tax, total: subtotal + shipping + tax };
+};
+
+// ---- Admin ----
+export const ORDER_STATUSES = ["Processing", "In Transit", "Delivered", "Cancelled"] as const;
+export type OrderStatus = (typeof ORDER_STATUSES)[number];
+
+/** Editable product fields (admin form) */
+export interface ProductInput {
+  name: string;
+  description: string;
+  price: number;
+  originalPrice: number | null;
+  imageUrl: string;
+  stock: number;
+  category: string;
+  badge: string | null;
+  rating: number;
+  reviews: number;
+  specs: Record<string, string>;
+}
+
+export interface AdminStats {
+  products: number;
+  users: number;
+  orders: number;
+  revenue: number;
+  low_stock: number;
+  orders_by_status: Record<OrderStatus, number>;
+}
+
+export interface AdminUser {
+  id: number;
+  username: string;
+  email: string;
+  is_admin: boolean;
+  created_at: string;
+  orders_count: number;
+}
+
+export interface AdminOrder extends Order {
+  userId: number;
+  username: string;
+  email: string;
+}
+
+interface ApiAdminOrder extends ApiOrder {
+  user_id: number;
+  username: string;
+  email: string;
+}
+
+const toApiProduct = (p: ProductInput) => ({
+  name: p.name,
+  description: p.description || null,
+  price: p.price,
+  original_price: p.originalPrice,
+  image_url: p.imageUrl || null,
+  stock: p.stock,
+  category: p.category,
+  badge: p.badge,
+  rating: p.rating,
+  reviews: p.reviews,
+  specs: p.specs,
+});
+
+const toAdminOrder = (o: ApiAdminOrder): AdminOrder => ({
+  ...toOrder(o),
+  userId: o.user_id,
+  username: o.username,
+  email: o.email,
+});
+
+const send = (method: string, body?: unknown): RequestInit => ({
+  method,
+  body: body === undefined ? undefined : JSON.stringify(body),
+});
+
+export const adminApi = {
+  stats: () => request<AdminStats>("/admin/stats"),
+
+  createProduct: async (p: ProductInput) => toProduct(await request<ApiProduct>("/products/", send("POST", toApiProduct(p)))),
+  updateProduct: async (id: number, p: ProductInput) =>
+    toProduct(await request<ApiProduct>(`/products/${id}`, send("PUT", toApiProduct(p)))),
+  deleteProduct: (id: number) => request<void>(`/products/${id}`, send("DELETE")),
+
+  orders: async () => (await request<ApiAdminOrder[]>("/admin/orders")).map(toAdminOrder),
+  setOrderStatus: async (id: number, status: OrderStatus) =>
+    toAdminOrder(await request<ApiAdminOrder>(`/admin/orders/${id}`, send("PATCH", { status }))),
+
+  users: () => request<AdminUser[]>("/admin/users"),
+  setAdmin: (id: number, isAdmin: boolean) =>
+    request<AdminUser>(`/admin/users/${id}`, send("PATCH", { is_admin: isAdmin })),
 };

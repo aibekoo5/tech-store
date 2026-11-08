@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { NavLink } from "@/components/NavLink";
-import { ShoppingCart, Heart, User, Menu, X, Search, Globe, Check } from "lucide-react";
+import { ShoppingCart, Heart, User, Menu, X, Search, Globe, Check, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -87,6 +87,15 @@ export const Navbar = () => {
           <div className="flex items-center space-x-2 sm:space-x-3">
             <LanguageSwitcher />
 
+            {user?.is_admin && (
+              <NavLink to="/admin" className="hidden sm:block" aria-label={t("admin.link")}>
+                <Button variant="ghost" size="sm" className="hover:bg-primary/10 gap-1 px-2 text-primary">
+                  <ShieldCheck className="h-5 w-5" />
+                  <span className="hidden lg:inline text-sm font-medium">{t("admin.link")}</span>
+                </Button>
+              </NavLink>
+            )}
+
             <NavLink to="/profile?tab=favorites" className="relative hidden sm:block" aria-label={t("nav.favorites")}>
               <Button variant="ghost" size="icon" className="hover:bg-primary/10">
                 <Heart className="h-5 w-5" />
@@ -134,6 +143,11 @@ export const Navbar = () => {
             <NavLink to="/profile" className={mobileLinkClass} activeClassName="text-primary" onClick={() => setIsMenuOpen(false)}>
               {t("nav.profile")}
             </NavLink>
+            {user?.is_admin && (
+              <NavLink to="/admin" className={mobileLinkClass} activeClassName="text-primary" onClick={() => setIsMenuOpen(false)}>
+                {t("admin.link")}
+              </NavLink>
+            )}
           </div>
         )}
       </div>
