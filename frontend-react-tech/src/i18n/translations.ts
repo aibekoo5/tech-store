@@ -184,6 +184,8 @@ const en = {
   "auth.signedInAs": "Signed in as {name}",
   "auth.loginFailed": "Sign in failed",
   "auth.registerFailed": "Registration failed",
+  "auth.demo": "Sign in with demo account",
+  "auth.demoHint": "Demo: {username} / {password}",
 
   "store.signInTitle": "Please sign in",
   "store.signInCart": "Sign in to add products to your cart.",
@@ -387,6 +389,8 @@ const ru: Dict = {
   "auth.signedInAs": "Вы вошли как {name}",
   "auth.loginFailed": "Не удалось войти",
   "auth.registerFailed": "Не удалось зарегистрироваться",
+  "auth.demo": "Войти в демо-аккаунт",
+  "auth.demoHint": "Демо: {username} / {password}",
 
   "store.signInTitle": "Войдите в аккаунт",
   "store.signInCart": "Чтобы добавлять товары в корзину, нужно войти.",
@@ -587,6 +591,8 @@ const kk: Dict = {
   "auth.signedInAs": "Сіз {name} ретінде кірдіңіз",
   "auth.loginFailed": "Кіру мүмкін болмады",
   "auth.registerFailed": "Тіркелу мүмкін болмады",
+  "auth.demo": "Демо-аккаунтпен кіру",
+  "auth.demoHint": "Демо: {username} / {password}",
 
   "store.signInTitle": "Аккаунтқа кіріңіз",
   "store.signInCart": "Себетке тауар қосу үшін кіру қажет.",

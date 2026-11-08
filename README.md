@@ -8,14 +8,51 @@
 | Frontend | `frontend-react-tech/` | React 18, TypeScript, Vite, Tailwind CSS, shadcn/ui, TanStack Query |
 | Backend | `backend-fastapi-tech/` | FastAPI, async SQLAlchemy 2, PostgreSQL (asyncpg), JWT, Stripe |
 
-## Запуск локально
+## Быстрый старт (Docker)
+
+Нужен только [Docker Desktop](https://www.docker.com/products/docker-desktop/).
+
+```sh
+docker compose up --build
+```
+
+- Сайт: http://localhost:8080
+- API и документация: http://localhost:8000/docs
+- Демо-аккаунт: **demo / demo123** (кнопка «Войти в демо-аккаунт» на странице входа)
+
+PostgreSQL, бэкенд и фронтенд поднимаются автоматически; таблицы, каталог и демо-пользователь
+создаются при первом запуске. Данные хранятся в Docker-томе `db-data` и не пропадают между перезапусками.
+
+| Команда | Что делает |
+|---|---|
+| `docker compose up -d --build` | запустить в фоне |
+| `docker compose logs -f backend` | логи бэкенда |
+| `docker compose down` | остановить (данные сохраняются) |
+| `docker compose down -v` | остановить и **удалить** базу (при следующем запуске — снова чистый каталог и демо-аккаунт) |
+
+Порты, пароль БД, `SECRET_KEY` и ключи Stripe можно переопределить: скопируйте
+`.env.docker.example` в `.env` в корне проекта.
+
+> В продакшене задайте свой `SECRET_KEY` и `POSTGRES_PASSWORD` и выключите демо-аккаунт: `DEMO_USER_ENABLED=false`.
+
+## Демо-данные
+
+При старте бэкенд автоматически:
+- добавляет в каталог товары из `backend-fastapi-tech/seed_products.json`, которых ещё нет в базе (сравнение по названию).
+  Чтобы новый товар появился у всех — добавьте его в этот файл и перезапустите бэкенд (в Docker: `docker compose up --build`);
+- создаёт демо-пользователя `demo` / `demo123` (`demo@arzanall.kz`), если его ещё нет.
+  Настраивается переменными `DEMO_USER_ENABLED`, `DEMO_USERNAME`, `DEMO_PASSWORD`, `DEMO_EMAIL`.
+
+Реальные данные (пользователи, заказы) в репозиторий не попадают — у каждого своя база.
+
+## Запуск локально без Docker
 
 Нужны: Python 3.11, Node.js 18+, PostgreSQL 16.
 
 ### 1. База данных
 
-Создайте базу `tech` в PostgreSQL. Таблицы создаются и каталог заполняется
-(`seed_products.json`) автоматически при первом запуске бэкенда.
+Создайте базу `tech` в PostgreSQL. Таблицы, каталог (`seed_products.json`) и демо-пользователь
+создаются автоматически при запуске бэкенда.
 
 ### 2. Backend — http://localhost:8000 (документация: `/docs`)
 

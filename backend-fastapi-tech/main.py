@@ -10,10 +10,11 @@ from fastapi.middleware.cors import CORSMiddleware
 
 import json
 from pathlib import Path
-from sqlalchemy import select, func, text
+from sqlalchemy import select, text
 
 from db import async_engine, AsyncSessionLocal
-from models import Base, Product
+from models import Base, Product, User
+from repositories.user import pwd_context
 from api import product_router, user_router, cart_router, payment_router, order_router, favorite_router
 
 
@@ -31,13 +32,33 @@ UPGRADE_SQL = [
 
 
 async def seed_products():
-    """Fill the catalog from seed_products.json when the products table is empty."""
+    """Sync the catalog with seed_products.json: add every seed product whose name is not in the DB yet.
+    Safe to run on every start; existing products (and edits to them) are left untouched."""
+    if not SEED_FILE.exists():
+        return
     async with AsyncSessionLocal() as session:
-        has_products = (await session.execute(select(func.count(Product.id)))).scalar_one()
-        if has_products or not SEED_FILE.exists():
+        existing = set((await session.execute(select(Product.name))).scalars().all())
+        new_items = [d for d in json.loads(SEED_FILE.read_text(encoding="utf-8")) if d["name"] not in existing]
+        if new_items:
+            session.add_all(Product(**d) for d in new_items)
+            await session.commit()
+
+
+async def seed_demo_user():
+    """Create a demo account so anyone who clones the project can sign in right away.
+    Controlled by DEMO_USER_ENABLED (default: true). Disable it in production."""
+    if os.environ.get("DEMO_USER_ENABLED", "true").lower() not in ("1", "true", "yes"):
+        return
+    username = os.environ.get("DEMO_USERNAME", "demo")
+    password = os.environ.get("DEMO_PASSWORD", "demo123")
+    email = os.environ.get("DEMO_EMAIL", "demo@arzanall.kz")
+    async with AsyncSessionLocal() as session:
+        exists = (await session.execute(
+            select(User.id).where((User.username == username) | (User.email == email))
+        )).first()
+        if exists:
             return
-        for data in json.loads(SEED_FILE.read_text(encoding="utf-8")):
-            session.add(Product(**data))
+        session.add(User(username=username, email=email, hashed_password=pwd_context.hash(password)))
         await session.commit()
 
 
@@ -50,6 +71,7 @@ async def lifespan(app: FastAPI):
         for stmt in UPGRADE_SQL:
             await conn.execute(text(stmt))
     await seed_products()
+    await seed_demo_user()
     yield
     await async_engine.dispose()
 

@@ -18,6 +18,10 @@ import { api } from "@/lib/api";
 import { toast } from "@/hooks/use-toast";
 
 const TABS = ["profile", "orders", "favorites", "settings"] as const;
+
+// Demo account seeded by the backend (DEMO_USER_ENABLED). Hide the button with VITE_SHOW_DEMO=false
+const DEMO = { username: "demo", password: "demo123" };
+const SHOW_DEMO = import.meta.env.VITE_SHOW_DEMO !== "false";
 type Tab = (typeof TABS)[number];
 
 const AuthForm = () => {
@@ -29,15 +33,16 @@ const AuthForm = () => {
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const submit = async (creds?: { username: string; password: string }) => {
     setIsSubmitting(true);
+    const name = creds?.username ?? username;
     try {
-      if (mode === "login") await login(username, password);
+      if (creds) await login(creds.username, creds.password);
+      else if (mode === "login") await login(username, password);
       else await register(username, email, password);
       toast({
-        title: mode === "login" ? t("auth.welcome") : t("auth.created"),
-        description: t("auth.signedInAs", { name: username }),
+        title: creds || mode === "login" ? t("auth.welcome") : t("auth.created"),
+        description: t("auth.signedInAs", { name }),
       });
     } catch (err) {
       toast({
@@ -56,7 +61,13 @@ const AuthForm = () => {
         <CardTitle>{mode === "login" ? t("auth.signIn") : t("auth.createAccount")}</CardTitle>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            submit();
+          }}
+          className="space-y-4"
+        >
           <div className="space-y-2">
             <Label htmlFor="username">{t("auth.username")}</Label>
             <Input id="username" value={username} onChange={(e) => setUsername(e.target.value)} required autoComplete="username" />
@@ -83,6 +94,14 @@ const AuthForm = () => {
             {isSubmitting && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
             {mode === "login" ? t("auth.signIn") : t("auth.createAccount")}
           </Button>
+          {SHOW_DEMO && mode === "login" && (
+            <div className="space-y-1">
+              <Button type="button" variant="outline" className="w-full" disabled={isSubmitting} onClick={() => submit(DEMO)}>
+                {t("auth.demo")}
+              </Button>
+              <p className="text-xs text-center text-muted-foreground">{t("auth.demoHint", DEMO)}</p>
+            </div>
+          )}
           <p className="text-sm text-center text-muted-foreground">
             {mode === "login" ? t("auth.noAccount") : t("auth.haveAccount")}{" "}
             <button

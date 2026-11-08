@@ -1,0 +1,50 @@
+# ArzanAll: PostgreSQL + FastAPI + React (nginx)
+#   docker compose up --build    ->  http://localhost:8080
+# Settings can be overridden in a root .env file (see .env.docker.example).
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: tech
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    volumes:
+      - db-data:/var/lib/postgresql/data   # data survives restarts; `docker compose down -v` wipes it
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d tech"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  backend:
+    build: ./backend-fastapi-tech
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+asyncpg://postgres:${POSTGRES_PASSWORD:-postgres}@db:5432/tech
+      SECRET_KEY: ${SECRET_KEY:-dev-only-secret-change-me}
+      ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-60}
+      BACKEND_CORS_ORIGINS: '["http://localhost:${FRONTEND_PORT:-8080}"]'
+      PROJECT_NAME: ArzanAll
+      DEBUG: "False"
+      DEMO_USER_ENABLED: ${DEMO_USER_ENABLED:-true}
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"     # API docs: http://localhost:8000/docs
+
+  frontend:
+    build: ./frontend-react-tech
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "${FRONTEND_PORT:-8080}:80"
+
+volumes:
+  db-data:
